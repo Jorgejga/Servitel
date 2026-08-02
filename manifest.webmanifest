@@ -1,0 +1,20 @@
+{
+  "name": "Servitel — buscador de productos",
+  "short_name": "Servitel",
+  "description": "Identifica productos de menaje a partir de una foto, sin conexión.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f5f3",
+  "theme_color": "#1f3864",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icono.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

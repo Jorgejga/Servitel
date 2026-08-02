@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f3864">
+<title>Servitel — buscar producto</title>
+<style>
+  :root {
+    --azul: #1f3864; --fondo: #f6f5f3; --texto: #1a1a1a; --suave: #6b6b6b;
+    --borde: #dcd9d4; --ok: #2f7a3f; --aviso: #b07a00; --error: #a32020;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--fondo); color: var(--texto); line-height: 1.5;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+  header {
+    background: var(--azul); color: #fff; padding: 12px 16px;
+    padding-top: calc(12px + env(safe-area-inset-top));
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { margin: 0; font-size: 16px; font-weight: 600; }
+  header p { margin: 2px 0 0; font-size: 12px; opacity: .8; }
+  main { padding: 14px; max-width: 960px; margin: 0 auto; }
+
+  .tarjeta {
+    background: #fff; border: 1px solid var(--borde); border-radius: 12px;
+    padding: 14px; margin-bottom: 12px;
+  }
+  .estado { font-size: 13px; color: var(--suave); }
+  .barra { height: 6px; background: var(--borde); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .barra > div { height: 100%; width: 0; background: var(--azul); transition: width .2s; }
+
+  button.principal {
+    display: block; width: 100%; padding: 15px; font-size: 17px; font-weight: 600;
+    color: #fff; background: var(--azul); border: 0; border-radius: 12px; cursor: pointer;
+  }
+  button.principal:disabled { background: #9aa4b5; }
+  input[type=file] { display: none; }
+  input[type=search] {
+    width: 100%; padding: 13px 14px; font-size: 16px; border: 1px solid var(--borde);
+    border-radius: 10px; background: #fff; color: var(--texto); -webkit-appearance: none;
+  }
+  .separador {
+    display: flex; align-items: center; gap: 10px; margin: 12px 0;
+    color: var(--suave); font-size: 12px; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .separador::before, .separador::after {
+    content: ""; flex: 1; height: 1px; background: var(--borde);
+  }
+
+  .metricas { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .metrica { flex: 1 1 84px; background: var(--fondo); border: 1px solid var(--borde);
+             border-radius: 8px; padding: 7px 9px; }
+  .metrica span { display: block; font-size: 10px; color: var(--suave);
+                  text-transform: uppercase; letter-spacing: .4px; }
+  .metrica b { font-size: 17px; font-variant-numeric: tabular-nums; }
+
+  #consulta { max-width: 100%; max-height: 160px; border-radius: 8px; display: block; margin: 0 auto; }
+
+  .rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 11px; }
+  .candidato { background: #fff; border: 1px solid var(--borde); border-radius: 10px;
+               overflow: hidden; display: flex; flex-direction: column; }
+  .candidato img { width: 100%; aspect-ratio: 1; object-fit: contain; background: #fff; display: block; }
+  .candidato .cuerpo { padding: 8px 10px 10px; flex: 1; }
+  .candidato .ref { font-weight: 700; font-size: 13.5px; word-break: break-all; }
+  .candidato .sec { font-size: 11px; color: var(--suave); }
+  .candidato .precio { font-weight: 600; color: var(--ok); font-size: 13px; }
+  .puntos { display: inline-block; font-size: 11px; font-variant-numeric: tabular-nums;
+            background: var(--fondo); border: 1px solid var(--borde); border-radius: 20px;
+            padding: 1px 7px; }
+  .puesto { float: right; font-size: 11px; color: var(--suave); }
+
+  /* Chip de gama: es un boton, lleva a toda la coleccion */
+  .gama {
+    display: block; width: 100%; margin-top: 7px; padding: 7px 8px;
+    font-size: 12px; font-weight: 600; text-align: left; cursor: pointer;
+    color: var(--azul); background: #eef1f7; border: 1px solid #cdd6e6; border-radius: 8px;
+  }
+  .gama::after { content: " ›"; font-weight: 700; }
+
+  .volver {
+    display: inline-block; padding: 9px 14px; font-size: 14px; font-weight: 600;
+    color: var(--azul); background: #fff; border: 1px solid var(--borde);
+    border-radius: 20px; cursor: pointer; margin-bottom: 12px;
+  }
+  .lista-gamas { display: flex; flex-direction: column; gap: 8px; }
+  .fila-gama {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    width: 100%; padding: 12px 14px; background: #fff; border: 1px solid var(--borde);
+    border-radius: 10px; cursor: pointer; text-align: left; font-size: 15px;
+    font-family: inherit; color: var(--texto);
+  }
+  .fila-gama b { font-weight: 600; }
+  .fila-gama span { font-size: 12px; color: var(--suave); white-space: nowrap; }
+  h2 { font-size: 17px; margin: 0 0 4px; }
+  .ok { color: var(--ok); } .aviso { color: var(--aviso); } .error { color: var(--error); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Servitel — identificar producto</h1>
+  <p id="cabecera">Preparando…</p>
+</header>
+
+<main>
+  <div class="tarjeta" id="tarjeta-estado">
+    <div class="estado" id="estado">Cargando el índice de catálogos…</div>
+    <div class="barra"><div id="progreso"></div></div>
+    <div class="metricas" id="metricas" hidden>
+      <div class="metrica"><span>Motor</span><b id="m-motor">—</b></div>
+      <div class="metrica"><span>Arranque</span><b id="m-arranque">—</b></div>
+      <div class="metrica"><span>Por foto</span><b id="m-foto">—</b></div>
+      <div class="metrica"><span>Comparar</span><b id="m-buscar">—</b></div>
+    </div>
+  </div>
+
+  <div class="tarjeta" id="tarjeta-buscar">
+    <button class="principal" id="boton" disabled>Cargando…</button>
+    <input type="file" id="fichero" accept="image/*">
+    <div class="separador">o busca por texto</div>
+    <input type="search" id="texto" placeholder="Modelo o palabra: craft, bol, tetera…"
+           autocomplete="off" enterkeyhint="search" disabled>
+    <p class="estado" style="margin:10px 0 0" id="pie">
+      Haz una foto del objeto solo, sobre fondo liso y con buena luz.
+    </p>
+  </div>
+
+  <div id="resultado"></div>
+</main>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const LIBRERIA = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
+const MODELO = 'Xenova/clip-vit-base-patch32';
+const TOP = 24;
+const MAX_LISTA = 60;
+
+let fichas = null, vectores = null, info = null, motor = '—';
+let procesador = null, codificador = null, LeerImagen = null;
+let porGama = new Map();      // gama -> [indices]
+let textoBusqueda = [];       // texto normalizado por ficha, para buscar por palabra
+let urlUltimaFoto = null;
+
+const normaliza = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const escapa = (s) => String(s ?? '').replace(/[&<>"']/g,
+  (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function estado(texto, clase) {
+  $('estado').innerHTML = clase ? `<span class="${clase}">${texto}</span>` : texto;
+}
+const progreso = (f) => { $('progreso').style.width = `${Math.min(100, Math.round(f * 100))}%`; };
+
+// ---------- Carga del índice ----------
+async function cargarIndice() {
+  info = await (await fetch('datos/info.json')).json();
+  $('cabecera').textContent =
+    `${info.imagenes.toLocaleString('es')} productos · ${info.catalogos.length} catálogos`;
+
+  fichas = await (await fetch('datos/fichas.json')).json();
+  vectores = new Float32Array(await (await fetch('datos/vectores.f32')).arrayBuffer());
+
+  const esperado = info.imagenes * info.dimensiones;
+  if (vectores.length !== esperado) {
+    throw new Error(`Índice descuadrado: ${vectores.length} números, esperaba ${esperado}`);
+  }
+
+  // Índices auxiliares: se calculan una vez y hacen instantáneo todo lo demás
+  fichas.forEach((f, i) => {
+    if (f.gama) {
+      if (!porGama.has(f.gama)) porGama.set(f.gama, []);
+      porGama.get(f.gama).push(i);
+    }
+    textoBusqueda[i] = normaliza(
+      [f.gama, (f.referencias_producto || []).join(' '), f.texto_producto].join(' '));
+  });
+  progreso(0.25);
+}
+
+// ---------- Modelo CLIP ----------
+async function cargarModelo() {
+  // CLIPVisionModelWithProjection a proposito: devuelve image_embeds (512 dimensiones,
+  // las mismas del indice). El atajo 'image-feature-extraction' puede dar 768.
+  const { AutoProcessor, CLIPVisionModelWithProjection, RawImage, env } = await import(LIBRERIA);
+  env.allowLocalModels = false;
+  LeerImagen = RawImage;
+  procesador = await AutoProcessor.from_pretrained(MODELO);
+
+  const intentos = [
+    { device: 'webgpu', dtype: 'fp16', nombre: 'GPU (fp16, 168 MB)' },
+    { device: 'wasm',   dtype: 'fp32', nombre: 'CPU (fp32, 335 MB)' },
+  ];
+  let ultimo = null;
+  for (const intento of intentos) {
+    try {
+      estado(`Descargando el modelo — ${intento.nombre}. Solo la primera vez.`);
+      codificador = await CLIPVisionModelWithProjection.from_pretrained(MODELO, {
+        device: intento.device, dtype: intento.dtype,
+        progress_callback: (p) => {
+          if (p.status === 'progress' && p.total) progreso(0.25 + 0.75 * (p.loaded / p.total));
+        },
+      });
+      motor = intento.nombre;
+      return;
+    } catch (e) { ultimo = e; console.warn(`Falló ${intento.nombre}:`, e); }
+  }
+  throw ultimo ?? new Error('No se pudo cargar el modelo');
+}
+
+// ---------- Búsqueda por foto ----------
+async function buscarFoto(fichero) {
+  $('boton').disabled = true;
+  $('boton').textContent = 'Comparando…';
+  $('resultado').innerHTML = '';
+
+  if (urlUltimaFoto) URL.revokeObjectURL(urlUltimaFoto);
+  urlUltimaFoto = URL.createObjectURL(fichero);
+
+  const t0 = performance.now();
+  const imagen = await LeerImagen.read(urlUltimaFoto);
+  const { image_embeds } = await codificador(await procesador(imagen));
+  const tFoto = performance.now() - t0;
+
+  const bruto = image_embeds.data, dim = info.dimensiones;
+  if (bruto.length !== dim) {
+    throw new Error(`La huella tiene ${bruto.length} números y el índice espera ${dim}. `
+      + 'El modelo no es el correcto.');
+  }
+  const huella = new Float32Array(dim);
+  let norma = 0;
+  for (let i = 0; i < dim; i++) { huella[i] = bruto[i]; norma += bruto[i] * bruto[i]; }
+  norma = Math.sqrt(norma) || 1;
+  for (let i = 0; i < dim; i++) huella[i] /= norma;
+
+  const t1 = performance.now();
+  const puntuaciones = new Float32Array(info.imagenes);
+  for (let n = 0, base = 0; n < info.imagenes; n++, base += dim) {
+    let suma = 0;
+    for (let i = 0; i < dim; i++) suma += vectores[base + i] * huella[i];
+    puntuaciones[n] = suma;
+  }
+  const orden = Array.from(puntuaciones.keys())
+    .sort((a, b) => puntuaciones[b] - puntuaciones[a]).slice(0, TOP);
+  const tBuscar = performance.now() - t1;
+
+  $('m-motor').textContent = motor.split(' ')[0];
+  $('m-foto').textContent = `${tFoto.toFixed(0)} ms`;
+  $('m-buscar').textContent = `${tBuscar.toFixed(0)} ms`;
+  $('metricas').hidden = false;
+
+  const mejor = puntuaciones[orden[0]], segundo = puntuaciones[orden[1]] ?? 0;
+  const margen = mejor - segundo;
+  const destacado = mejor >= 0.85 && margen >= 0.05;
+
+  $('resultado').innerHTML = `
+    <div class="tarjeta">
+      <img id="consulta" src="${urlUltimaFoto}" alt="tu foto">
+      <p class="estado" style="text-align:center;margin:6px 0 0">
+        ${destacado ? '<b class="ok">Hay un candidato destacado</b>'
+                    : '<b class="aviso">Sin ganador claro</b> — compara los primeros'}
+        · mejor ${mejor.toFixed(3)} · margen ${margen.toFixed(3)}
+      </p>
+    </div>
+    <div class="rejilla">${orden.map((i, n) => tarjeta(i, puntuaciones[i], n + 1)).join('')}</div>`;
+
+  $('boton').disabled = false;
+  $('boton').textContent = 'Identificar otro objeto';
+  $('resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ---------- Tarjeta de producto ----------
+function tarjeta(indice, puntuacion, puesto) {
+  const f = fichas[indice];
+  const refs = f.referencias_producto || [];
+  const ref = refs.length ? escapa(refs.join(' · ')) : 'sin código';
+  const medidas = escapa((f.medidas_detectadas || []).slice(0, 3).join(' · '));
+  const precio = (f.precios_detectados || [])[0];
+  return `
+    <div class="candidato">
+      <img loading="lazy" src="datos/miniaturas/${escapa(f.miniatura)}" alt="${ref}">
+      <div class="cuerpo">
+        ${puntuacion != null ? `<span class="puntos">${puntuacion.toFixed(3)}</span>` : ''}
+        ${puesto != null ? `<span class="puesto">#${puesto}</span>` : ''}
+        <div class="ref">${ref}</div>
+        <div class="sec">${escapa(f.catalogo)} · pág. ${f.pagina}</div>
+        ${medidas ? `<div class="sec">${medidas}</div>` : ''}
+        ${precio ? `<div class="precio">${precio.toFixed(2).replace('.', ',')} €</div>` : ''}
+        ${f.gama ? `<button class="gama" data-gama="${escapa(f.gama)}">Ver gama ${escapa(f.gama)}</button>` : ''}
+      </div>
+    </div>`;
+}
+
+// ---------- Ver una gama completa ----------
+function verGama(nombre) {
+  const indices = porGama.get(nombre) || [];
+  // una tarjeta por referencia: en Steelite cada color es un codigo del mismo plato
+  const vistas = new Set(), unicos = [];
+  for (const i of indices) {
+    const clave = (fichas[i].referencias_producto || []).join('|') || `foto${i}`;
+    if (!vistas.has(clave)) { vistas.add(clave); unicos.push(i); }
+  }
+  unicos.sort((a, b) => fichas[a].pagina - fichas[b].pagina);
+  const paginas = [...new Set(indices.map((i) => fichas[i].pagina))].sort((a, b) => a - b);
+  const catalogo = fichas[indices[0]]?.catalogo ?? '';
+
+  $('resultado').innerHTML = `
+    <button class="volver" id="volver">‹ Volver</button>
+    <div class="tarjeta">
+      <h2>Gama ${escapa(nombre)}</h2>
+      <div class="estado">${escapa(catalogo)} · páginas ${paginas[0]}-${paginas[paginas.length - 1]}
+        · ${unicos.length} piezas</div>
+    </div>
+    <div class="rejilla">${unicos.slice(0, MAX_LISTA).map((i) => tarjeta(i)).join('')}</div>
+    ${unicos.length > MAX_LISTA
+      ? `<p class="estado" style="margin-top:10px">Se muestran ${MAX_LISTA} de ${unicos.length}.</p>`
+      : ''}`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ---------- Búsqueda por texto ----------
+function buscarTexto(consulta) {
+  const q = normaliza(consulta.trim());
+  if (q.length < 2) return;
+
+  const gamas = [...porGama.keys()]
+    .filter((g) => normaliza(g).includes(q))
+    .sort((a, b) => porGama.get(b).length - porGama.get(a).length);
+
+  const productos = [];
+  for (let i = 0; i < textoBusqueda.length && productos.length < MAX_LISTA; i++) {
+    if (textoBusqueda[i].includes(q)) productos.push(i);
+  }
+
+  if (!gamas.length && !productos.length) {
+    $('resultado').innerHTML = `
+      <div class="tarjeta">
+        <b>Nada encontrado con «${escapa(consulta)}»</b>
+        <p class="estado">Esta búsqueda compara letras, no entiende descripciones: prueba con
+        el nombre del modelo (craft, pacifica) o una palabra tal como la escribe el catálogo
+        (bol, tetera, tumbler). Para describir un objeto con tus palabras, usa la foto o
+        pregúntale a Claude en el ordenador.</p>
+      </div>`;
+    return;
+  }
+
+  const listaGamas = gamas.length ? `
+    <div class="tarjeta">
+      <h2>Modelos</h2>
+      <div class="lista-gamas">
+        ${gamas.slice(0, 12).map((g) => `
+          <button class="fila-gama" data-gama="${escapa(g)}">
+            <b>${escapa(g)}</b><span>${porGama.get(g).length} fotos ›</span>
+          </button>`).join('')}
+      </div>
+    </div>` : '';
+
+  const listaProductos = productos.length ? `
+    <div class="tarjeta"><h2>Productos que contienen «${escapa(consulta)}»</h2>
+      <div class="estado">${productos.length}${productos.length >= MAX_LISTA ? '+' : ''} coincidencias</div>
+    </div>
+    <div class="rejilla">${productos.map((i) => tarjeta(i)).join('')}</div>` : '';
+
+  $('resultado').innerHTML = listaGamas + listaProductos;
+  $('resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ---------- Arranque ----------
+(async () => {
+  const inicio = performance.now();
+  try {
+    await cargarIndice();
+    await cargarModelo();
+    progreso(1);
+    $('m-arranque').textContent = `${((performance.now() - inicio) / 1000).toFixed(1)} s`;
+    $('m-motor').textContent = motor.split(' ')[0];
+    $('metricas').hidden = false;
+    estado(`Listo. Motor: <b>${motor}</b>. La próxima vez arranca en segundos.`, 'ok');
+    $('boton').disabled = false;
+    $('texto').disabled = false;
+    $('boton').textContent = 'Hacer foto del objeto';
+  } catch (e) {
+    console.error(e);
+    estado(`No se pudo preparar el buscador: ${e.message}`, 'error');
+    $('pie').textContent = 'Comprueba la conexión. Detalle en la consola del navegador.';
+  }
+})();
+
+$('boton').addEventListener('click', () => $('fichero').click());
+$('fichero').addEventListener('change', (e) => {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  buscarFoto(f).catch((err) => {
+    console.error(err);
+    estado(`Error al comparar: ${err.message}`, 'error');
+    $('boton').disabled = false;
+    $('boton').textContent = 'Reintentar';
+  });
+});
+$('texto').addEventListener('change', (e) => buscarTexto(e.target.value));
+$('texto').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.target.blur(); buscarTexto(e.target.value); }
+});
+
+// Un solo escuchador para toda la página: las tarjetas se recrean constantemente
+$('resultado').addEventListener('click', (e) => {
+  const chip = e.target.closest('[data-gama]');
+  if (chip) { verGama(chip.dataset.gama); return; }
+  if (e.target.closest('#volver')) {
+    $('resultado').innerHTML = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+});
+</script>
+</body>
+</html>

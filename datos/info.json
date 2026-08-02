@@ -1,0 +1,16 @@
+{
+  "imagenes": 7363,
+  "dimensiones": 512,
+  "modelo": "Xenova/clip-vit-base-patch32",
+  "precision": "fp16",
+  "incluye_precios": false,
+  "catalogos": [
+    "Bonna 2026",
+    "CATALOGO GENWARE 2026",
+    "CATALOGO_PROFESIONAL_STEELITE _a partir de 1 mayo 2026",
+    "COSTA-NOVA-Professional-Catalog-ROW-2026-pag-dupla",
+    "Catálogo Fuentes Guerra",
+    "Pura Sangre 2026"
+  ],
+  "generado": "2026-08-05T19:13:31+00:00"
+}
